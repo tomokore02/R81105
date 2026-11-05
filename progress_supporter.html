@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワンピース制作 Progress Supporter</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', 'Plus Jakarta Sans', sans-serif;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased pb-16">
+
+  <!-- ヘッダーエリア -->
+  <header class="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto px-4 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black tracking-wide">ワンピース制作 Progress Supporter</h1>
+        <p class="text-xs text-rose-100 font-bold">服飾デザイン科 実習サポートアプリ</p>
+      </div>
+      
+      <!-- 生徒名/番号入力 -->
+      <div class="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/30 text-xs sm:text-sm">
+        <label for="student-name" class="font-bold shrink-0">No. / Name:</label>
+        <input type="text" id="student-name" placeholder="00 岡山 南" 
+          class="bg-white text-slate-800 font-bold px-2.5 py-1 rounded border border-rose-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 w-36 sm:w-44 shadow-inner" 
+          onchange="saveStudentData()" />
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 pt-6 space-y-6">
+
+    <!-- ビジュアル進捗＆アドバイス・期間設定エリア -->
+    <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-5">
+      
+      <!-- 制作期間の設定 -->
+      <div class="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="font-extrabold text-slate-700 flex items-center gap-2 shrink-0">
+          <span>実習期間の設定</span>
+          <span id="days-remaining" class="bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0">残り -- 日</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1">
+            <span class="text-slate-500 font-bold">開始:</span>
+            <input type="date" id="start-date" class="bg-white border border-slate-300 rounded px-2 py-1 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-400" onchange="calculateProgress()">
+          </div>
+          <span class="text-slate-400 font-bold">〜</span>
+          <div class="flex items-center gap-1">
+            <span class="text-slate-500 font-bold">提出目標:</span>
+            <input type="date" id="target-date" class="bg-white border border-slate-300 rounded px-2 py-1 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-400" onchange="calculateProgress()">
+          </div>
+        </div>
+      </div>
+
+      <!-- 進度％ & プログレスバー -->
+      <div class="space-y-2">
+        <div class="flex justify-between items-end">
+          <div>
+            <span class="text-xs font-extrabold text-slate-400 uppercase tracking-wider block">Total Progress</span>
+            <span class="text-xs font-bold text-slate-500">制作完了ステップ: <span id="completed-count" class="text-rose-500 font-black">0</span> / 21 工程</span>
+          </div>
+          <div class="text-right">
+            <span id="progress-percent" class="text-4xl sm:text-5xl font-black text-rose-500 tracking-tight">0%</span>
+          </div>
+        </div>
+        
+        <!-- プログレスバー背景 -->
+        <div class="w-full bg-slate-100 rounded-full h-5 p-1 shadow-inner overflow-hidden border border-slate-200">
+          <div id="progress-bar" class="bg-gradient-to-r from-rose-400 via-pink-500 to-amber-400 h-full rounded-full transition-all duration-700 ease-out w-0 shadow"></div>
+        </div>
+      </div>
+
+      <!-- 教員からのフィードバックアドバイスボックス -->
+      <div class="bg-rose-50/70 p-4 rounded-xl border border-rose-200/80 flex items-start gap-3">
+        <div class="w-full">
+          <h3 class="text-xs font-extrabold text-rose-600 uppercase tracking-wider">先生からのアドバイス & フィードバック</h3>
+          <p id="teacher-advice" class="text-xs sm:text-sm font-bold text-slate-700 mt-1 leading-relaxed">
+            いよいよオリジナルワンピース作りがスタートします！まずは素敵なデザイン画と正確な寸法計画から組み立てていきましょう。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 制作工程チェックリスト (1〜21工程) -->
+    <section class="space-y-3">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="font-black text-slate-800 text-lg sm:text-xl tracking-wide">制作工程チェックリスト</h2>
+        <span class="text-xs font-bold text-slate-500">日付を選ぶと完了になります</span>
+      </div>
+
+      <div id="tasks-container" class="space-y-2.5">
+        <!-- JavaScriptで動的生成されます -->
+      </div>
+    </section>
+
+    <!-- フッター＆先生用管理画面切替 -->
+    <footer class="pt-8 text-center space-y-4">
+      <button onclick="toggleTeacherView()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors shadow-sm">
+        先生用管理画面へ
+      </button>
+      <p class="text-xs font-bold text-slate-400">© 2026 Dressmaking Education Support System</p>
+    </footer>
+
+    <!-- 先生用管理画面（モーダル風表示） -->
+    <div id="teacher-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="bg-slate-800 text-white px-5 py-4 flex justify-between items-center shrink-0">
+          <div>
+            <h3 class="font-black text-lg">先生用 指導・進度モニタリング画面</h3>
+            <p class="text-xs text-slate-300">各生徒の進捗到達度と最終作業日のチェック</p>
+          </div>
+          <button onclick="toggleTeacherView()" class="text-slate-400 hover:text-white font-bold text-xl px-2">✕</button>
+        </div>
+        
+        <div class="p-5 overflow-y-auto space-y-5 text-xs sm:text-sm">
+          <!-- 統計概要カード -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-center">
+              <span class="text-xs font-bold text-rose-500 block">現在の進度％</span>
+              <span id="summary-percent" class="text-2xl font-black text-rose-600">0%</span>
+            </div>
+            <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 text-center">
+              <span class="text-xs font-bold text-sky-500 block">完了工程数</span>
+              <span id="summary-completed" class="text-2xl font-black text-sky-600">0 / 21</span>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-center">
+              <span class="text-xs font-bold text-amber-600 block">最新の到達ステップ</span>
+              <span id="summary-last-step" class="text-xs font-black text-amber-700 block mt-1 truncate">未開始</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-600 text-xs font-bold leading-relaxed">
+            生徒の端末画面や実習巡回時にこの画面を開くことで、生徒の到達度の詳細（完了工程数・直近の完了日・目標日との差異）が一目で確認できます。
+          </div>
+
+          <!-- 生徒進度詳細テーブル -->
+          <div class="border rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-100 text-slate-700 font-extrabold border-b">
+                <tr>
+                  <th class="p-3">No. / Name</th>
+                  <th class="p-3">進度 (%)</th>
+                  <th class="p-3">完了数</th>
+                  <th class="p-3">最新達成工程</th>
+                  <th class="p-3">最終更新日</th>
+                </tr>
+              </thead>
+              <tbody id="teacher-table-body" class="divide-y font-bold text-slate-700">
+                <!-- JavaScriptで挿入 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 px-5 py-3 border-t text-right shrink-0">
+          <button onclick="toggleTeacherView()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // 教員用画面の保護用パスワード（初期値: 1234）
+    const TEACHER_PASSWORD = "1234";
+
+    // 1〜21工程のデータ定義（ご提示の18項目 + おすすめの3項目）
+    const tasks = [
+      { id: 1, name: "デザイン画・仕様書作成", desc: "作品の全体イメージ・シルエット、展開図とサイズ計画を決定します。", bg: "from-pink-500 to-rose-500" },
+      { id: 2, name: "製図", desc: "自分のサイズに合わせて文化式原型などから原図を起こします。", bg: "from-rose-500 to-red-500" },
+      { id: 3, name: "型紙作り", desc: "製図から縫いしろを付けてカットし、パーツごとのパターンを作成します。", bg: "from-red-500 to-orange-500" },
+      { id: 4, name: "布の見積もり", desc: "必要な生地の要尺（長さ）を計算し、効率よくパーツを配置する準備をします。", bg: "from-orange-500 to-amber-500" },
+      { id: 5, name: "裁断", desc: "布地の地の目を正確に通して型紙を配置し、ハサミで裁断します。", bg: "from-amber-500 to-yellow-500" },
+      { id: 6, name: "接着芯はり", desc: "見返しやえり、ファスナーつけ位置など、補強が必要な部位に芯を貼ります。", bg: "from-yellow-500 to-lime-500" },
+      { id: 7, name: "印つけ", desc: "切りじつけや切り込み（トッチ）、チャコなどで合印や縫い線をつけていきます。", bg: "from-lime-500 to-green-500" },
+      { id: 8, name: "仮縫い", desc: "しつけ糸を使って手縫いで大まかに組み立て、補正の準備をします。", bg: "from-green-500 to-emerald-500" },
+      { id: 9, name: "試着", desc: "実際に着用して、シルエット、ゆとり、丈のバランスを確認します。", bg: "from-emerald-500 to-teal-500" },
+      { id: 10, name: "型紙補正", desc: "試着での修正箇所（つまんだ分量など）を型紙と生地に正確に反映させます。", bg: "from-teal-500 to-cyan-500" },
+      { id: 11, name: "見返し作り", desc: "えりぐりやそでぐりの見返しパーツを縫い合わせ、端始末をして整えます。", bg: "from-cyan-500 to-sky-500" },
+      { id: 12, name: "縫いしろの始末", desc: "ロックミシンやジグザグ縫いで裁断面がほつれないよう端始末を行います。", bg: "from-sky-500 to-blue-500" },
+      { id: 13, name: "切り替え縫い", desc: "デザイン上の切り替えラインやダーツを丁寧に縫い合わせ、アイロンで倒します。", bg: "from-blue-500 to-indigo-500" },
+      { id: 14, name: "ファスナーつけ", desc: "コンシールファスナー等を仕様書通りにきれいに取りつけます。", bg: "from-indigo-500 to-violet-500" },
+      { id: 15, name: "肩縫い", desc: "身頃の肩線を合わせ、指定の縫いしろ幅で縫い合わせます。", bg: "from-violet-500 to-purple-500" },
+      { id: 16, name: "脇縫い", desc: "身頃の脇線を縫い合わせ、着脱のしやすさとラインを確認します。", bg: "from-purple-500 to-fuchsia-500" },
+      { id: 17, name: "そでつけ・そでぐりの始末", desc: "袖山にいせ込みを入れ、本体の袖ぐりに合印を合わせて縫い付けます。", bg: "from-fuchsia-500 to-pink-500" },
+      { id: 18, name: "えりつけ・えりぐりの始末", desc: "衿パーツまたは見返しを衿ぐりに綺麗に縫い付け、ステッチで整えます。", bg: "from-pink-500 to-rose-400" },
+      { id: 19, name: "すその始末", desc: "三つ折り縫いやまつり縫いで裾をきれいに仕上げます。", bg: "from-rose-400 to-amber-500" },
+      { id: 20, name: "アイロンがけ・仕上げプレッシング", desc: "全体にスチームアイロンを当て、縫い目を落ち着かせて仕上がりを高めます。", bg: "from-amber-500 to-orange-500" },
+      { id: 21, name: "完成・作品発表 / 着用撮影", desc: "糸くずを取り除き、完成！ポートフォリオ用に着用写真を撮影します。", bg: "from-rose-500 via-pink-500 to-amber-400" }
+    ];
+
+    // 生徒データの保持
+    let studentData = {
+      name: "",
+      startDate: "",
+      targetDate: "",
+      taskDates: {}
+    };
+
+    // 初期表示処理
+    window.onload = function() {
+      // 制作期間の初期設定（デフォルト: 今日から1ヶ月後）
+      const today = new Date();
+      const target = new Date();
+      target.setDate(today.getDate() + 30);
+
+      document.getElementById('start-date').value = formatDate(today);
+      document.getElementById('target-date').value = formatDate(target);
+
+      loadStudentData();
+      renderTasks();
+      calculateProgress();
+    };
+
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // タスク一覧のレンダリング
+    function renderTasks() {
+      const container = document.getElementById('tasks-container');
+      container.innerHTML = '';
+
+      tasks.forEach(task => {
+        const savedDate = studentData.taskDates[task.id] || '';
+        const isDone = !!savedDate;
+
+        const card = document.createElement('div');
+        card.className = `p-4 sm:p-4.5 rounded-xl border transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+          isDone 
+            ? 'bg-rose-50/70 border-rose-200 shadow-sm' 
+            : 'bg-white border-slate-200/80 hover:border-slate-300'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <!-- カラフルな番号バッジ -->
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br ${task.bg} text-white font-black text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-sm">
+              ${task.id}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-slate-800 text-sm sm:text-base">${task.name}</h3>
+                ${isDone ? '<span class="text-[10px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">完了</span>' : ''}
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${task.desc}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+            <span class="text-xs font-bold text-slate-400">完了日:</span>
+            <input type="date" 
+              id="date-input-${task.id}" 
+              value="${savedDate}"
+              onchange="onDateChange(${task.id}, this.value)"
+              class="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-400 shadow-sm"
+            />
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // 日付変更時の処理
+    function onDateChange(taskId, dateVal) {
+      if (dateVal) {
+        studentData.taskDates[taskId] = dateVal;
+      } else {
+        delete studentData.taskDates[taskId];
+      }
+      
+      saveStudentData();
+      renderTasks();
+      calculateProgress(taskId, !!dateVal);
+    }
+
+    // 進度（％）計算とアドバイス更新
+    function calculateProgress(lastUpdatedTaskId = null, isNewlyCompleted = false) {
+      const completedCount = Object.keys(studentData.taskDates).length;
+      const totalTasks = tasks.length;
+      const percent = Math.round((completedCount / totalTasks) * 100);
+
+      // UI反映
+      document.getElementById('completed-count').innerText = completedCount;
+      document.getElementById('progress-percent').innerText = `${percent}%`;
+      document.getElementById('progress-bar').style.width = `${percent}%`;
+
+      // 残り日数計算
+      const targetDateVal = document.getElementById('target-date').value;
+      if (targetDateVal) {
+        const target = new Date(targetDateVal);
+        const today = new Date();
+        const diffTime = target - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const daysElem = document.getElementById('days-remaining');
+        
+        if (diffDays >= 0) {
+          daysElem.innerText = `提出まで残り ${diffDays} 日`;
+          daysElem.className = "bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0";
+        } else {
+          daysElem.innerText = `目標日を ${Math.abs(diffDays)} 日経過`;
+          daysElem.className = "bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0";
+        }
+      }
+
+      // 100%完了時の紙吹雪演出
+      if (percent === 100 && isNewlyCompleted) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // 先生からの進度アドバイス更新
+      updateTeacherAdvice(percent, completedCount);
+    }
+
+    // 進度に合わせたフィードバックメッセージ
+    function updateTeacherAdvice(percent, completedCount) {
+      const adviceElem = document.getElementById('teacher-advice');
+      let message = "";
+
+      if (percent === 0) {
+        message = "いよいよオリジナルワンピース作りがスタートします！まずは素敵なデザイン画と正確な寸法計画から組み立てていきましょう。";
+      } else if (percent < 20) {
+        message = "製図・型紙作りと着実なスタートです！布の見積もりと裁断は布の地の目をしっかり通して進めてくださいね。";
+      } else if (percent < 40) {
+        message = "裁断と接着芯はりお疲れ様です！仮縫いと試着はシルエットを左右する大切な工程。体型に合わせてしっかりチェックしましょう！";
+      } else if (percent < 60) {
+        message = "試着補正が済んだら折り返し地点です！見返し作りや端始末など、見えない部分の丁寧な処理が服の完成度を高めます。";
+      } else if (percent < 80) {
+        message = "切り替えやファスナーつけ、身頃の縫い合わせに入りましたね！立体になっていく工程を楽しみながら丁寧に進めましょう！";
+      } else if (percent < 100) {
+        message = "ゴールはもうすぐそこです！袖・衿ぐりの始末やすその仕上がり、最後のアイロンプレスまで心を込めて仕上げてください！";
+      } else {
+        message = "祝・完成！素晴らしいオリジナルワンピースが仕上がりましたね！これまでの努力が形になりました。自信を持って着こなしてください！";
+      }
+
+      adviceElem.innerText = message;
+    }
+
+    // ローカルストレージ保存・読み込み
+    function saveStudentData() {
+      studentData.name = document.getElementById('student-name').value;
+      studentData.startDate = document.getElementById('start-date').value;
+      studentData.targetDate = document.getElementById('target-date').value;
+      localStorage.setItem('onepiece_progress_data', JSON.stringify(studentData));
+    }
+
+    function loadStudentData() {
+      const saved = localStorage.getItem('onepiece_progress_data');
+      if (saved) {
+        studentData = JSON.parse(saved);
+        if (studentData.name) document.getElementById('student-name').value = studentData.name;
+        if (studentData.startDate) document.getElementById('start-date').value = studentData.startDate;
+        if (studentData.targetDate) document.getElementById('target-date').value = studentData.targetDate;
+      }
+    }
+
+    // 先生用モーダル切替（パスワード保護付き）
+    function toggleTeacherView() {
+      const modal = document.getElementById('teacher-modal');
+      const isHidden = modal.classList.contains('hidden');
+
+      if (isHidden) {
+        const pwd = prompt("先生用パスワードを入力してください（初期値: 1234）:");
+        if (pwd !== TEACHER_PASSWORD) {
+          if (pwd !== null) alert("パスワードが正しくありません。");
+          return;
+        }
+
+        // テーブル内容とサマリーの更新
+        const tbody = document.getElementById('teacher-table-body');
+        const completedCount = Object.keys(studentData.taskDates).length;
+        const percent = Math.round((completedCount / tasks.length) * 100);
+        
+        // 日付順に並べ替えて最新の達成工程を取得
+        const sortedCompletedTaskIds = Object.keys(studentData.taskDates)
+          .map(id => parseInt(id))
+          .sort((a, b) => new Date(studentData.taskDates[a]) - new Date(studentData.taskDates[b]));
+
+        const lastTaskId = sortedCompletedTaskIds.length > 0 ? sortedCompletedTaskIds[sortedCompletedTaskIds.length - 1] : null;
+        const lastTaskObj = lastTaskId ? tasks.find(t => t.id === lastTaskId) : null;
+        const lastTaskName = lastTaskObj ? `${lastTaskObj.id}. ${lastTaskObj.name}` : "未開始";
+        const lastDate = lastTaskId ? studentData.taskDates[lastTaskId] : "―";
+
+        // サマリー数値のセット
+        document.getElementById('summary-percent').innerText = `${percent}%`;
+        document.getElementById('summary-completed').innerText = `${completedCount} / ${tasks.length}`;
+        document.getElementById('summary-last-step').innerText = lastTaskName;
+
+        tbody.innerHTML = `
+          <tr>
+            <td class="p-3 text-slate-900 font-black">${studentData.name || "未入力（受講生徒）"}</td>
+            <td class="p-3">
+              <span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full font-extrabold text-xs inline-block">${percent}%</span>
+            </td>
+            <td class="p-3">${completedCount} / ${tasks.length}</td>
+            <td class="p-3 text-xs text-slate-800">${lastTaskName}</td>
+            <td class="p-3 text-xs text-slate-500">${lastDate}</td>
+          </tr>
+        `;
+
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
